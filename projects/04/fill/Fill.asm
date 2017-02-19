@@ -3,59 +3,109 @@
 // by Nisan and Schocken, MIT Press.
 // File name: projects/04/Fill.asm
 
-// Runs an infinite loop that listens to the keyboard input.
+// Runs an infinite loop that listens to the keyboard input. 
 // When a key is pressed (any key), the program blackens the screen,
-// i.e. writes "black" in every pixel;
-// the screen should remain fully black as long as the key is pressed. 
-// When no key is pressed, the program clears the screen, i.e. writes
-// "white" in every pixel;
-// the screen should remain fully clear as long as no key is pressed.
+// i.e. writes "black" in every pixel. When no key is pressed, the
+// program clears the screen, i.e. writes "white" in every pixel.
 
 // Put your code here.
+// first put the starting address of the screen in R0
+
 @8192
 D=A
+@SCREEN
+D=D+A
+
+// set the total words to 32x256+SCREEN
 @totalwords
 M=D
+
+(START)
+// store the screen start address in R0
 @SCREEN
 D=A
-
 @R0
 M=D
 
-(LOOP)
+// get the keyboard input
 @KBD
 D=M
-
-// if KBD !=0 set the whole screen black
+// if D!=0 jump to black screen part
 @BLACK
-D;JNE
+D;JGT
 
-// store the white color in r1
-R1=0
+// else jump to white screen part
+@WHITE
+D;JEQ
+
+(BLACK)
+// store the black color in R1
+@R1
+M=-1 // fill the screen with all 1 (1111111111111111)
+
 @UPDATE
 0;JMP
 
-(BLACK)
-// store black color in r1
-R1=-1
-// then update
+(WHITE)
+// store the white color in R1
+@R1
+M=0
 @UPDATE
 0;JMP
 
 (UPDATE)
-
-// if the old status is same with the new status continue
-@KBD
-D=M
-
-(FILL)
-// FILL program is used to fill color R1 from starting address R0
-
+//fill the whole screen with R1 color
 @R1
 D=M
 
+// first get the address which want to color
 @R0
+A=M
+//color it
+M=D
 
+// move to the next chunk of 16-bit pixel
+@R0
+D=M+1
 
+//totalwords - current addr 
+@totalwords
+D=M-D
 
+//already fill the whole screen no need to forward current write addr
+@START
+D;JLT
 
+@R0
+M=M+1
+
+@KBD
+D=M
+//if D>0 still need to fill
+@PRESSKEY
+D;JGT
+
+@NOTPRESSKEY
+0;JMP
+
+// press key situation
+(PRESSKEY)
+@R1
+D=M
+
+@START
+D;JEQ
+
+@UPDATE
+0;JMP
+
+//not press key situation
+(NOTPRESSKEY)
+@R1
+D=M
+
+@UPDATE
+D;JEQ
+
+@START
+0;JMP
